@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NovaMind AI — Premium Voice Architecture</title>
+    <title>NovaMind AI — Voice Receptionist for Aesthetic Clinics</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -152,7 +152,7 @@
             animation-delay: 1.5s;
         }
 
-        /* MIC BUTTON */
+        /* MIC BUTTON & CONNECTING STATE */
         @keyframes mic-breathe {
 
             0%,
@@ -174,6 +174,18 @@
 
             50% {
                 box-shadow: 0 0 0 24px rgba(212, 175, 55, 0), 0 0 80px var(--gold-glow-strong);
+            }
+        }
+
+        @keyframes connecting-blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.3;
             }
         }
 
@@ -202,6 +214,15 @@
 
         #mic-btn:active {
             transform: scale(0.96);
+        }
+
+        /* CONNECTING STATE CLASSES */
+        #mic-btn.connecting {
+            border-color: #FFB300;
+        }
+
+        #mic-btn.connecting #mic-icon {
+            animation: connecting-blink 0.8s infinite ease-in-out;
         }
 
         #mic-btn.speaking {
@@ -246,6 +267,7 @@
         }
 
         #mic-btn.speaking~#mic-label,
+        #mic-btn.connecting~#mic-label,
         #mic-btn.speaking+*+#mic-label {
             color: var(--gold);
             letter-spacing: 0.25em;
@@ -658,6 +680,9 @@
 
                 vapiInstance.on("call-start", function () {
                     callActive = true;
+                    // Remove connecting state
+                    document.getElementById("mic-btn").classList.remove("connecting");
+
                     document.getElementById("mic-btn").classList.add("speaking");
                     document.getElementById("mic-label").textContent = "Tap to end call";
                     document.getElementById("waveform").style.opacity = "1";
@@ -666,6 +691,9 @@
 
                 vapiInstance.on("call-end", function () {
                     callActive = false;
+                    // Remove connecting state if any
+                    document.getElementById("mic-btn").classList.remove("connecting");
+
                     document.getElementById("mic-btn").classList.remove("speaking");
                     document.getElementById("mic-label").textContent = "Tap to begin";
                     document.getElementById("waveform").style.opacity = "0";
@@ -674,9 +702,13 @@
 
                 vapiInstance.on("error", function (e) {
                     console.error("Vapi error:", e);
-                    document.getElementById("mic-label").textContent = "Error — Check API Key";
                     callActive = false;
+                    // Remove connecting state on error
+                    document.getElementById("mic-btn").classList.remove("connecting");
+
+                    document.getElementById("mic-label").textContent = "Error — Check API Key";
                     document.getElementById("mic-btn").classList.remove("speaking");
+                    setNavStatus("#F44336", "0 0 8px rgba(244,67,54,0.6)", "ERROR", "#F44336");
                 });
             };
         })(document, "script");
@@ -703,8 +735,18 @@
                 document.getElementById("mic-label").textContent = "Loading SDK…";
                 return;
             }
-            if (callActive) { vapiInstance.stop(); }
-            else { vapiInstance.start(assistant); }
+            if (callActive) {
+                // Disconnecting state
+                document.getElementById("mic-label").textContent = "Disconnecting...";
+                vapiInstance.stop();
+            } else {
+                // STARTING CALL - OPTIMISTIC UI FEEDBACK
+                document.getElementById("mic-btn").classList.add("connecting");
+                document.getElementById("mic-label").textContent = "Initiating Connection...";
+                setNavStatus("#FFB300", "0 0 10px rgba(255,179,0,0.8)", "CONNECTING...", "#FFB300");
+
+                vapiInstance.start(assistant);
+            }
         }
     </script>
 </body>
