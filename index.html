@@ -655,6 +655,16 @@
         var vapiInstance = null;
         var callActive = false;
 
+        // --- RING TONE LOGIC ADDED HERE ---
+        var ringtone = new Audio('calling.mp3');
+        ringtone.loop = true;
+
+        function stopRingtone() {
+            ringtone.pause();
+            ringtone.currentTime = 0;
+        }
+        // ----------------------------------
+
         const assistant = "3da81165-c00c-4e14-a940-9dd2f07b3e9f";
 
         // ⚠️ ALARM: YAHAN APNI PUBLIC API KEY DALNA (pk_... se shuru hoti hai)
@@ -680,6 +690,9 @@
 
                 vapiInstance.on("call-start", function () {
                     callActive = true;
+
+                    stopRingtone(); // STOP RINGTONE ON CONNECT
+
                     // Remove connecting state
                     document.getElementById("mic-btn").classList.remove("connecting");
 
@@ -691,6 +704,9 @@
 
                 vapiInstance.on("call-end", function () {
                     callActive = false;
+
+                    stopRingtone(); // STOP RINGTONE ON END
+
                     // Remove connecting state if any
                     document.getElementById("mic-btn").classList.remove("connecting");
 
@@ -703,6 +719,9 @@
                 vapiInstance.on("error", function (e) {
                     console.error("Vapi error:", e);
                     callActive = false;
+
+                    stopRingtone(); // STOP RINGTONE ON ERROR
+
                     // Remove connecting state on error
                     document.getElementById("mic-btn").classList.remove("connecting");
 
@@ -744,6 +763,11 @@
                 document.getElementById("mic-btn").classList.add("connecting");
                 document.getElementById("mic-label").textContent = "Initiating Connection...";
                 setNavStatus("#FFB300", "0 0 10px rgba(255,179,0,0.8)", "CONNECTING...", "#FFB300");
+
+                // PLAY RINGTONE HERE
+                ringtone.play().catch(function (err) {
+                    console.log("Audio play failed (maybe browser blocked autoplay):", err);
+                });
 
                 vapiInstance.start(assistant);
             }
